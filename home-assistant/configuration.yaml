@@ -1,6 +1,6 @@
 rest_command:
   push_telemetry:
-    url: "https://ha-cf-relay.<YOUR_SUBDOMAIN>.workers.dev/update"
+    url: "https://ha-cf-relay.maxrhys.workers.dev/update"
     method: POST
     headers:
       Authorization: "Bearer YOUR_RANDOM_SECRET_TOKEN"

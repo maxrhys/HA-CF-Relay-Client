@@ -7,14 +7,14 @@ action:
   - service: rest_command.push_telemetry
     data:
       devices:
-        unit_alpha:
-          name: "Unit Alpha"
+        Incubator01:
+          name: "Incubator 01"
           updated_at: "{{ now().isoformat() }}"
           sensors:
             temperature:
-              value: "{{ states('sensor.unit_alpha_temperature') | float(0) }}"
-              unit: "{{ state_attr('sensor.unit_alpha_temperature', 'unit_of_measurement') | default('°C') }}"
+              value: "{{ states('sensor.incubator01_temperature') | float(0) }}"
+              unit: "{{ state_attr('sensor.incubator01_temperature', 'unit_of_measurement') | default('°C') }}"
             humidity:
-              value: "{{ states('sensor.unit_alpha_humidity') | float(0) }}"
-              unit: "{{ state_attr('sensor.unit_alpha_humidity', 'unit_of_measurement') | default('%') }}"
+              value: "{{ states('sensor.incubator01_humidity') | float(0) }}"
+              unit: "{{ state_attr('sensor.incubator01_humidity', 'unit_of_measurement') | default('%') }}"
 mode: single
