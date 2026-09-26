@@ -1,0 +1,20 @@
+alias: "Push Telemetry to HA-CF-Relay (5m Interval)"
+description: "Bundles environment & unit telemetry and writes a single update to HA-CF-Relay"
+trigger:
+  - platform: time_pattern
+    minutes: "/5"
+action:
+  - service: rest_command.push_telemetry
+    data:
+      devices:
+        unit_alpha:
+          name: "Unit Alpha"
+          updated_at: "{{ now().isoformat() }}"
+          sensors:
+            temperature:
+              value: "{{ states('sensor.unit_alpha_temperature') | float(0) }}"
+              unit: "{{ state_attr('sensor.unit_alpha_temperature', 'unit_of_measurement') | default('°C') }}"
+            humidity:
+              value: "{{ states('sensor.unit_alpha_humidity') | float(0) }}"
+              unit: "{{ state_attr('sensor.unit_alpha_humidity', 'unit_of_measurement') | default('%') }}"
+mode: single

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HA-CF-Relay Monitor</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+      --accent: #38bdf8;
+      --warn: #f87171;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 2rem; }
+    header { max-width: 900px; margin: 0 auto 2rem; display: flex; justify-content: space-between; align-items: center; }
+    h1 { font-size: 1.5rem; font-weight: 600; }
+    #grid { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; position: relative; }
+    .card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+    .card-title { font-size: 1.15rem; font-weight: 600; }
+    .sensor-list { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem; }
+    .sensor-item { display: flex; justify-content: space-between; font-size: 0.95rem; }
+    .sensor-name { color: var(--subtext); text-transform: capitalize; }
+    .sensor-val { font-weight: 600; font-feature-settings: "tnum"; color: var(--accent); }
+    .card-footer { font-size: 0.8rem; color: var(--subtext); display: flex; justify-content: space-between; align-items: center; }
+    .badge { padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 500; }
+    .badge-live { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+    .badge-stale { background: rgba(248, 113, 113, 0.15); color: var(--warn); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>HA-CF-Relay Status</h1>
+    <span id="global-status" style="font-size: 0.85rem; color: var(--subtext);">Polling edge...</span>
+  </header>
+  <main id="grid"></main>
+
+  <script>
+    const API_ENDPOINT = "https://ha-cf-relay.<YOUR_SUBDOMAIN>.workers.dev/data";
+    const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+
+    async function fetchTelemetry() {
+      try {
+        const res = await fetch(API_ENDPOINT);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderGrid(data);
+        document.getElementById("global-status").textContent = `Last polled: ${new Date().toLocaleTimeString()}`;
+      } catch (err) {
+        document.getElementById("global-status").textContent = "Failed to sync with edge";
+        console.error("Telemetry fetch failed:", err);
+      }
+    }
+
+    function renderGrid(devices) {
+      const container = document.getElementById("grid");
+      container.innerHTML = "";
+
+      Object.entries(devices).forEach(([deviceId, device]) => {
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const updateTime = new Date(device.updated_at);
+        const isStale = (Date.now() - updateTime.getTime()) > STALE_THRESHOLD_MS;
+
+        let sensorRows = "";
+        if (device.sensors) {
+          Object.entries(device.sensors).forEach(([key, metric]) => {
+            const unit = metric.unit ? ` ${metric.unit}` : "";
+            sensorRows += `
+              <li class="sensor-item">
+                <span class="sensor-name">${key.replace(/_/g, " ")}</span>
+                <span class="sensor-val">${metric.value}${unit}</span>
+              </li>
+            `;
+          });
+        }
+
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="card-title">${device.name || deviceId}</span>
+            <span class="badge ${isStale ? 'badge-stale' : 'badge-live'}">${isStale ? 'Stale' : 'Live'}</span>
+          </div>
+          <ul class="sensor-list">${sensorRows}</ul>
+          <div class="card-footer">
+            <span>Updated: ${isNaN(updateTime.getTime()) ? 'Unknown' : updateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    fetchTelemetry();
+    setInterval(fetchTelemetry, 60000); // Poll every 60 seconds
+  </script>
+</body>
+</html>

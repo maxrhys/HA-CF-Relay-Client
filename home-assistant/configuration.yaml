@@ -1,0 +1,8 @@
+rest_command:
+  push_telemetry:
+    url: "https://ha-cf-relay.<YOUR_SUBDOMAIN>.workers.dev/update"
+    method: POST
+    headers:
+      Authorization: "Bearer YOUR_RANDOM_SECRET_TOKEN"
+      Content-Type: "application/json"
+    payload: "{{ devices | to_json }}"
